@@ -5,7 +5,7 @@ section .text
 
 _start:
     mov     rsi, filename       ; write(*buf*)
-    add     rsi, 45             ; stub is 45 bytes long
+    add     rsi, 46             ; stub is 45 bytes long
     add     rsi, 0x41414000     ; memory mapped here
     mov     dl, 10              ; write(*count*)
     mov     al, 1               ; write syscall
