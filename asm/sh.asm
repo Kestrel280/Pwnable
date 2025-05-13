@@ -52,5 +52,5 @@ _start:
     syscall
 
 section .data:
-    filename db "asm.c", 0
+    filename db "this_is_pwnable.kr_flag_file_please_read_this_file.sorry_the_file_name_is_very_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo0000000000000000000000000ooooooooooooooooooooooo000000000000o0o0o0o0o0o0ong", 0
     okay db "okay", 0xa, 0xd, 0
