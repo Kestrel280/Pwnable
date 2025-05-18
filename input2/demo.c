@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 int main(int argc, char* argv[]) {
     int i;
@@ -13,5 +14,20 @@ int main(int argc, char* argv[]) {
         }
         printf("\n");
     }
+
+    char buf[4];
+    read(0, buf, 4);
+    printf("read from stdin: \n");
+    for (i = 0; i < 4; i++) {
+        printf("0x%x ", buf[i]);
+    }
+    printf("\n");
+
+    read(2, buf, 4);
+    printf("read from stderr: \n");
+    for (i = 0; i < 4; i++) {
+        printf("0x%x ", buf[i]);
+    }
+    printf("\n");
     return 0;
 }
