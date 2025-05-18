@@ -1,74 +1,74 @@
-rdtsc():
-        push    ebp
-        mov     ebp, esp
+rdtsc:
+        pushl   %ebp
+        movl    %esp, %ebp
         rdtsc
-        ud2
-slow_memcpy(char*, char const*, unsigned int):
-        push    ebp
-        mov     ebp, esp
-        sub     esp, 16
-        mov     DWORD PTR [ebp-4], 0
+        nop
+        popl    %ebp
+        ret
+slow_memcpy:
+        pushl   %ebp
+        movl    %esp, %ebp
+        subl    $16, %esp
+        movl    $0, -4(%ebp)
         jmp     .L3
 .L4:
-        mov     edx, DWORD PTR [ebp-4]
-        mov     eax, DWORD PTR [ebp+12]
-        add     eax, edx
-        mov     ecx, DWORD PTR [ebp-4]
-        mov     edx, DWORD PTR [ebp+8]
-        add     edx, ecx
-        movzx   eax, BYTE PTR [eax]
-        mov     BYTE PTR [edx], al
-        add     DWORD PTR [ebp-4], 1
+        movl    -4(%ebp), %edx
+        movl    12(%ebp), %eax
+        addl    %edx, %eax
+        movl    -4(%ebp), %ecx
+        movl    8(%ebp), %edx
+        addl    %ecx, %edx
+        movzbl  (%eax), %eax
+        movb    %al, (%edx)
+        addl    $1, -4(%ebp)
 .L3:
-        mov     eax, DWORD PTR [ebp-4]
-        cmp     eax, DWORD PTR [ebp+16]
+        movl    -4(%ebp), %eax
+        cmpl    16(%ebp), %eax
         jb      .L4
-        mov     eax, DWORD PTR [ebp+8]
+        movl    8(%ebp), %eax
         leave
         ret
-fast_memcpy(char*, char const*, unsigned int):
-        push    ebp
-        mov     ebp, esp
-        sub     esp, 16
-        cmp     DWORD PTR [ebp+16], 63
+fast_memcpy:
+        pushl   %ebp
+        movl    %esp, %ebp
+        subl    $16, %esp
+        cmpl    $63, 16(%ebp)
         jbe     .L7
-        mov     eax, DWORD PTR [ebp+16]
-        shr     eax, 6
-        mov     DWORD PTR [ebp-4], eax
-        and     DWORD PTR [ebp+16], 63
+        movl    16(%ebp), %eax
+        shrl    $6, %eax
+        movl    %eax, -4(%ebp)
+        andl    $63, 16(%ebp)
         jmp     .L8
 .L9:
-        mov     eax, DWORD PTR [ebp+12]
-        mov     edx, DWORD PTR [ebp+8]
-        movdqa (eax), %xmm0
-movdqa 16(eax), %xmm1
-movdqa 32(eax), %xmm2
-movdqa 48(eax), %xmm3
-movntps %xmm0, (edx)
-movntps %xmm1, 16(edx)
-movntps %xmm2, 32(edx)
-movntps %xmm3, 48(edx)
+        movl    12(%ebp), %eax
+        movl    8(%ebp), %edx
+        movdqa (%eax), %xmm0
+movdqa 16(%eax), %xmm1
+movdqa 32(%eax), %xmm2
+movdqa 48(%eax), %xmm3
+movntps %xmm0, (%edx)
+movntps %xmm1, 16(%edx)
+movntps %xmm2, 32(%edx)
+movntps %xmm3, 48(%edx)
 
-        add     DWORD PTR [ebp+8], 64
-        add     DWORD PTR [ebp+12], 64
+        addl    $64, 8(%ebp)
+        addl    $64, 12(%ebp)
 .L8:
-        mov     eax, DWORD PTR [ebp-4]
-        lea     edx, [eax-1]
-        mov     DWORD PTR [ebp-4], edx
-        test    eax, eax
-        setne   al
-        test    al, al
+        movl    -4(%ebp), %eax
+        leal    -1(%eax), %edx
+        movl    %edx, -4(%ebp)
+        testl   %eax, %eax
         jne     .L9
 .L7:
-        cmp     DWORD PTR [ebp+16], 0
+        cmpl    $0, 16(%ebp)
         je      .L10
-        push    DWORD PTR [ebp+16]
-        push    DWORD PTR [ebp+12]
-        push    DWORD PTR [ebp+8]
-        call    slow_memcpy(char*, char const*, unsigned int)
-        add     esp, 12
+        pushl   16(%ebp)
+        pushl   12(%ebp)
+        pushl   8(%ebp)
+        call    slow_memcpy
+        addl    $12, %esp
 .L10:
-        mov     eax, DWORD PTR [ebp+8]
+        movl    8(%ebp), %eax
         leave
         ret
 .LC0:
@@ -89,295 +89,305 @@ movntps %xmm3, 48(edx)
         .string "This time, just help me out with my experiment and get flag"
 .LC8:
         .string "No fancy hacking, I promise :D"
-.LC9:
-        .string "specify the memcpy amount between %d ~ %d : "
 .LC10:
-        .string "%d"
+        .string "specify the memcpy amount between %d ~ %d : "
 .LC11:
-        .string "don't mess with the experiment."
+        .string "%d"
 .LC12:
-        .string "ok, lets run the experiment with your configuration"
+        .string "don't mess with the experiment."
 .LC13:
-        .string "experiment %d : memcpy with buffer size %d\n"
+        .string "ok, lets run the experiment with your configuration"
 .LC14:
-        .string "ellapsed CPU cycles for slow_memcpy : %llu\n"
+        .string "experiment %d : memcpy with buffer size %d\n"
 .LC15:
-        .string "ellapsed CPU cycles for fast_memcpy : %llu\n"
+        .string "ellapsed CPU cycles for slow_memcpy : %llu\n"
 .LC16:
-        .string "thanks for helping my experiment!"
+        .string "ellapsed CPU cycles for fast_memcpy : %llu\n"
 .LC17:
+        .string "thanks for helping my experiment!"
+.LC18:
         .string "flag : [erased here. get it from server]"
 main:
-        lea     ecx, [esp+4]
-        and     esp, -16
-        push    DWORD PTR [ecx-4]
-        push    ebp
-        mov     ebp, esp
-        push    ecx
-        sub     esp, 116
-        mov     eax, DWORD PTR stdout
-        push    0
-        push    2
-        push    0
-        push    eax
+        leal    4(%esp), %ecx
+        andl    $-16, %esp
+        pushl   -4(%ecx)
+        pushl   %ebp
+        movl    %esp, %ebp
+        pushl   %ecx
+        subl    $116, %esp
+        movl    stdout, %eax
+        pushl   $0
+        pushl   $2
+        pushl   $0
+        pushl   %eax
         call    setvbuf
-        add     esp, 16
-        mov     eax, DWORD PTR stdin
-        push    0
-        push    1
-        push    0
-        push    eax
+        addl    $16, %esp
+        movl    stdin, %eax
+        pushl   $0
+        pushl   $1
+        pushl   $0
+        pushl   %eax
         call    setvbuf
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC0
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC0
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC1
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC1
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC2
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC2
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC3
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC3
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC4
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC4
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC5
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC5
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC6
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC6
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC2
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC2
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC7
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC7
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC8
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC8
         call    puts
-        add     esp, 16
-        sub     esp, 8
-        push    0
-        push    -1
-        push    34
-        push    7
-        push    16384
-        push    0
+        addl    $16, %esp
+        subl    $8, %esp
+        pushl   $0
+        pushl   $-1
+        pushl   $34
+        pushl   $7
+        pushl   $16384
+        pushl   $0
         call    mmap
-        add     esp, 32
-        mov     DWORD PTR [ebp-20], eax
-        sub     esp, 8
-        push    0
-        push    -1
-        push    34
-        push    7
-        push    16384
-        push    0
+        addl    $32, %esp
+        movl    %eax, -20(%ebp)
+        subl    $8, %esp
+        pushl   $0
+        pushl   $-1
+        pushl   $34
+        pushl   $7
+        pushl   $16384
+        pushl   $0
         call    mmap
-        add     esp, 32
-        mov     DWORD PTR [ebp-24], eax
-        sub     esp, 8
-        push    0
-        push    -1
-        push    34
-        push    7
-        push    8192
-        push    0
+        addl    $32, %esp
+        movl    %eax, -24(%ebp)
+        subl    $8, %esp
+        pushl   $0
+        pushl   $-1
+        pushl   $34
+        pushl   $7
+        pushl   $8192
+        pushl   $0
         call    mmap
-        add     esp, 32
-        mov     DWORD PTR [ebp-28], eax
-        mov     DWORD PTR [ebp-16], 0
-        mov     DWORD PTR [ebp-12], 4
+        addl    $32, %esp
+        movl    %eax, -28(%ebp)
+        movl    $0, -16(%ebp)
+        movl    $4, -12(%ebp)
         jmp     .L13
 .L16:
-        mov     eax, DWORD PTR [ebp-12]
-        sub     eax, 1
-        sub     esp, 8
-        push    eax
-        push    2
-        call    _ZSt3powIiiEN9__gnu_cxx11__promote_2IDTplcvNS1_IT_XsrSt12__is_integerIS2_E7__valueEE6__typeELi0EcvNS1_IT0_XsrS3_IS7_E7__valueEE6__typeELi0EEXsrS3_ISB_E7__valueEE6__typeES2_S7_
-        add     esp, 16
-        fnstcw  WORD PTR [ebp-106]
-        movzx   eax, WORD PTR [ebp-106]
-        or      ah, 12
-        mov     WORD PTR [ebp-108], ax
-        fldcw   WORD PTR [ebp-108]
-        fistp   QWORD PTR [ebp-120]
-        fldcw   WORD PTR [ebp-106]
-        mov     eax, DWORD PTR [ebp-120]
-        mov     DWORD PTR [ebp-52], eax
-        sub     esp, 8
-        push    DWORD PTR [ebp-12]
-        push    2
-        call    _ZSt3powIiiEN9__gnu_cxx11__promote_2IDTplcvNS1_IT_XsrSt12__is_integerIS2_E7__valueEE6__typeELi0EcvNS1_IT0_XsrS3_IS7_E7__valueEE6__typeELi0EEXsrS3_ISB_E7__valueEE6__typeES2_S7_
-        add     esp, 16
-        fnstcw  WORD PTR [ebp-106]
-        movzx   eax, WORD PTR [ebp-106]
-        or      ah, 12
-        mov     WORD PTR [ebp-108], ax
-        fldcw   WORD PTR [ebp-108]
-        fistp   QWORD PTR [ebp-120]
-        fldcw   WORD PTR [ebp-106]
-        mov     eax, DWORD PTR [ebp-120]
-        mov     DWORD PTR [ebp-56], eax
-        sub     esp, 4
-        push    DWORD PTR [ebp-56]
-        push    DWORD PTR [ebp-52]
-        push    OFFSET FLAT:.LC9
+        movl    -12(%ebp), %eax
+        subl    $1, %eax
+        movl    %eax, -120(%ebp)
+        fildl   -120(%ebp)
+        leal    -8(%esp), %esp
+        fstpl   (%esp)
+        fldl    .LC9
+        leal    -8(%esp), %esp
+        fstpl   (%esp)
+        call    pow
+        addl    $16, %esp
+        fnstcw  -106(%ebp)
+        movzwl  -106(%ebp), %eax
+        orb     $12, %ah
+        movw    %ax, -108(%ebp)
+        fldcw   -108(%ebp)
+        fistpq  -120(%ebp)
+        fldcw   -106(%ebp)
+        movl    -120(%ebp), %eax
+        movl    %eax, -52(%ebp)
+        fildl   -12(%ebp)
+        leal    -8(%esp), %esp
+        fstpl   (%esp)
+        fldl    .LC9
+        leal    -8(%esp), %esp
+        fstpl   (%esp)
+        call    pow
+        addl    $16, %esp
+        fnstcw  -106(%ebp)
+        movzwl  -106(%ebp), %eax
+        orb     $12, %ah
+        movw    %ax, -108(%ebp)
+        fldcw   -108(%ebp)
+        fistpq  -120(%ebp)
+        fldcw   -106(%ebp)
+        movl    -120(%ebp), %eax
+        movl    %eax, -56(%ebp)
+        subl    $4, %esp
+        pushl   -56(%ebp)
+        pushl   -52(%ebp)
+        pushl   $.LC10
         call    printf
-        add     esp, 16
-        sub     esp, 8
-        lea     eax, [ebp-60]
-        push    eax
-        push    OFFSET FLAT:.LC10
+        addl    $16, %esp
+        subl    $8, %esp
+        leal    -60(%ebp), %eax
+        pushl   %eax
+        pushl   $.LC11
         call    __isoc99_scanf
-        add     esp, 16
-        mov     eax, DWORD PTR [ebp-60]
-        cmp     eax, DWORD PTR [ebp-52]
+        addl    $16, %esp
+        movl    -60(%ebp), %eax
+        cmpl    -52(%ebp), %eax
         jb      .L14
-        mov     eax, DWORD PTR [ebp-60]
-        cmp     DWORD PTR [ebp-56], eax
+        movl    -60(%ebp), %eax
+        cmpl    %eax, -56(%ebp)
         jnb     .L15
 .L14:
-        sub     esp, 12
-        push    OFFSET FLAT:.LC11
+        subl    $12, %esp
+        pushl   $.LC12
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    0
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $0
         call    exit
 .L15:
-        mov     edx, DWORD PTR [ebp-60]
-        mov     eax, DWORD PTR [ebp-16]
-        lea     ecx, [eax+1]
-        mov     DWORD PTR [ebp-16], ecx
-        mov     DWORD PTR [ebp-100+eax*4], edx
-        add     DWORD PTR [ebp-12], 1
+        movl    -16(%ebp), %eax
+        leal    1(%eax), %edx
+        movl    %edx, -16(%ebp)
+        movl    -60(%ebp), %edx
+        movl    %edx, -100(%ebp,%eax,4)
+        addl    $1, -12(%ebp)
 .L13:
-        cmp     DWORD PTR [ebp-12], 13
+        cmpl    $13, -12(%ebp)
         jle     .L16
-        sub     esp, 12
-        push    1
+        subl    $12, %esp
+        pushl   $1
         call    sleep
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC12
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC13
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    1
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $1
         call    sleep
-        add     esp, 16
-        mov     DWORD PTR [ebp-16], 0
+        addl    $16, %esp
+        movl    $0, -16(%ebp)
         jmp     .L17
 .L18:
-        mov     eax, DWORD PTR [ebp-16]
-        mov     eax, DWORD PTR [ebp-100+eax*4]
-        mov     DWORD PTR [ebp-60], eax
-        mov     eax, DWORD PTR [ebp-60]
-        mov     edx, DWORD PTR [ebp-16]
-        add     edx, 1
-        sub     esp, 4
-        push    eax
-        push    edx
-        push    OFFSET FLAT:.LC13
+        movl    -16(%ebp), %eax
+        movl    -100(%ebp,%eax,4), %eax
+        movl    %eax, -60(%ebp)
+        movl    -60(%ebp), %eax
+        movl    -16(%ebp), %edx
+        addl    $1, %edx
+        subl    $4, %esp
+        pushl   %eax
+        pushl   %edx
+        pushl   $.LC14
         call    printf
-        add     esp, 16
-        mov     eax, DWORD PTR [ebp-60]
-        sub     esp, 12
-        push    eax
+        addl    $16, %esp
+        movl    -60(%ebp), %eax
+        subl    $12, %esp
+        pushl   %eax
         call    malloc
-        add     esp, 16
-        mov     DWORD PTR [ebp-32], eax
-        sub     esp, 4
-        push    16384
-        push    DWORD PTR [ebp-24]
-        push    DWORD PTR [ebp-20]
+        addl    $16, %esp
+        movl    %eax, -32(%ebp)
+        subl    $4, %esp
+        pushl   $16384
+        pushl   -24(%ebp)
+        pushl   -20(%ebp)
         call    memcpy
-        add     esp, 16
-        call    rdtsc()
-        mov     DWORD PTR [ebp-40], eax
-        mov     DWORD PTR [ebp-36], edx
-        mov     eax, DWORD PTR [ebp-60]
-        sub     esp, 4
-        push    eax
-        push    DWORD PTR [ebp-28]
-        push    DWORD PTR [ebp-32]
-        call    slow_memcpy(char*, char const*, unsigned int)
-        add     esp, 16
-        call    rdtsc()
-        mov     DWORD PTR [ebp-48], eax
-        mov     DWORD PTR [ebp-44], edx
-        mov     eax, DWORD PTR [ebp-48]
-        mov     edx, DWORD PTR [ebp-44]
-        sub     eax, DWORD PTR [ebp-40]
-        sbb     edx, DWORD PTR [ebp-36]
-        sub     esp, 4
-        push    edx
-        push    eax
-        push    OFFSET FLAT:.LC14
+        addl    $16, %esp
+        call    rdtsc
+        movl    %eax, -40(%ebp)
+        movl    %edx, -36(%ebp)
+        movl    -60(%ebp), %eax
+        subl    $4, %esp
+        pushl   %eax
+        pushl   -28(%ebp)
+        pushl   -32(%ebp)
+        call    slow_memcpy
+        addl    $16, %esp
+        call    rdtsc
+        movl    %eax, -48(%ebp)
+        movl    %edx, -44(%ebp)
+        movl    -48(%ebp), %eax
+        movl    -44(%ebp), %edx
+        subl    -40(%ebp), %eax
+        sbbl    -36(%ebp), %edx
+        subl    $4, %esp
+        pushl   %edx
+        pushl   %eax
+        pushl   $.LC15
         call    printf
-        add     esp, 16
-        sub     esp, 4
-        push    16384
-        push    DWORD PTR [ebp-24]
-        push    DWORD PTR [ebp-20]
+        addl    $16, %esp
+        subl    $4, %esp
+        pushl   $16384
+        pushl   -24(%ebp)
+        pushl   -20(%ebp)
         call    memcpy
-        add     esp, 16
-        call    rdtsc()
-        mov     DWORD PTR [ebp-40], eax
-        mov     DWORD PTR [ebp-36], edx
-        mov     eax, DWORD PTR [ebp-60]
-        sub     esp, 4
-        push    eax
-        push    DWORD PTR [ebp-28]
-        push    DWORD PTR [ebp-32]
-        call    fast_memcpy(char*, char const*, unsigned int)
-        add     esp, 16
-        call    rdtsc()
-        mov     DWORD PTR [ebp-48], eax
-        mov     DWORD PTR [ebp-44], edx
-        mov     eax, DWORD PTR [ebp-48]
-        mov     edx, DWORD PTR [ebp-44]
-        sub     eax, DWORD PTR [ebp-40]
-        sbb     edx, DWORD PTR [ebp-36]
-        sub     esp, 4
-        push    edx
-        push    eax
-        push    OFFSET FLAT:.LC15
+        addl    $16, %esp
+        call    rdtsc
+        movl    %eax, -40(%ebp)
+        movl    %edx, -36(%ebp)
+        movl    -60(%ebp), %eax
+        subl    $4, %esp
+        pushl   %eax
+        pushl   -28(%ebp)
+        pushl   -32(%ebp)
+        call    fast_memcpy
+        addl    $16, %esp
+        call    rdtsc
+        movl    %eax, -48(%ebp)
+        movl    %edx, -44(%ebp)
+        movl    -48(%ebp), %eax
+        movl    -44(%ebp), %edx
+        subl    -40(%ebp), %eax
+        sbbl    -36(%ebp), %edx
+        subl    $4, %esp
+        pushl   %edx
+        pushl   %eax
+        pushl   $.LC16
         call    printf
-        add     esp, 16
-        sub     esp, 12
-        push    10
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $10
         call    putchar
-        add     esp, 16
-        add     DWORD PTR [ebp-16], 1
+        addl    $16, %esp
+        addl    $1, -16(%ebp)
 .L17:
-        cmp     DWORD PTR [ebp-16], 9
+        cmpl    $9, -16(%ebp)
         jle     .L18
-        sub     esp, 12
-        push    OFFSET FLAT:.LC16
+        subl    $12, %esp
+        pushl   $.LC17
         call    puts
-        add     esp, 16
-        sub     esp, 12
-        push    OFFSET FLAT:.LC17
+        addl    $16, %esp
+        subl    $12, %esp
+        pushl   $.LC18
         call    puts
-        add     esp, 16
-        mov     eax, 0
-        mov     ecx, DWORD PTR [ebp-4]
+        addl    $16, %esp
+        movl    $0, %eax
+        movl    -4(%ebp), %ecx
         leave
-        lea     esp, [ecx-4]
+        leal    -4(%ecx), %esp
         ret
+.LC9:
+        .long   0
+        .long   1073741824
