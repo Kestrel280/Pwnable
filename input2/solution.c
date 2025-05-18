@@ -1,16 +1,24 @@
 #include <fcntl.h>
+#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <sys/socket.h>
+
+// port hardcoded at 17280 to avoid some annoying sprintf nonsense
 
 int main() {
     char* args[100];
     pid_t pid;
-    int i;
+    int i, j;
     int fd;
     FILE* fp;
     int fd1[2], fd2[2];
-    char* envp[] = {"\xde\xad\xbe\xef=\xca\xfe\xba\xbe", "PATH=/tmp/k280_input2", NULL};
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    struct hostent* server;
+    char* envp[] = {"\xde\xad\xbe\xef=\xca\xfe\xba\xbe", "PATH=/tmp/k280_input2:/home/input2", NULL};
 
     printf("starting solver\n");
 
@@ -31,18 +39,32 @@ int main() {
         perror("failure with opening xoa: ");
         exit(1);
     }
-    printf("x0a fd is %d\n", fd);
     write(fd, "\x00\x00\x00\x00", 4);
-    fp = fdopen(fd, "r");
-    if (fp == NULL) {
-        perror("failure with associating xoa with a FILE*: ");
+    close(fd);
+    printf("created and populated file x0a\n");
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        perror("failure creating socket: ");
         exit(1);
     }
-    
-    printf("opened and wrote to x0a\n");
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    server = gethostbyname("127.0.0.1");
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(17280);
+    memcpy((char*) server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
+    printf("created client port\n");
 
+//    fp = fdopen(fd, "w+");
+//    if (fp == NULL) {
+//        perror("failure with associating xoa with a FILE*: ");
+//        exit(1);
+//    }
+    
     for (i = 0; i < 100; i++) { args[i] = ""; }
     args['B'] = "\x20\x0a\x0d\x00";
+    args['C'] = "17280";
+    printf("established arguments\n");
 
     pid = fork();
     if (pid) {  // Child
@@ -67,6 +89,25 @@ int main() {
     write(fd2[1], "\x00\x0a\x02\xff", 4);
     close(fd1[1]);
     close(fd2[1]);
+    
+    for (i = 0; i < 1000; i++) {
+        for (j = 0; j < 1000000; j++) {
+        }
+    }
+
+    printf("parent: attempting to connect to socket\n");
+    if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        perror("parent: error while connecting: ");
+        exit(1);
+    }
+    printf("parent: connected to socket\n");
+    write(sockfd, "\xde\xad\xbe\xef", 4);
+    printf("parent: delivered payload in socket\n");
+
+    for (i = 0; i < 1000; i++) {
+        for (j = 0; j < 1000000; j++) {
+        }
+    }
 
     printf("parent process reached end\n");
     

