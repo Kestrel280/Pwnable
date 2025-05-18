@@ -1,0 +1,237 @@
+
+helloworld.o:     file format pe-x86-64
+
+Contents of section .debug$S:
+ 0000 04000000 f3000000 3b000000 00433a5c  ........;....C:\
+ 0010 55736572 735c646f 776e655c 446f6375  Users\downe\Docu
+ 0020 6d656e74 735c5265 706f735c 50776e61  ments\Repos\Pwna
+ 0030 626c655c 61736d5c 68656c6c 6f776f72  ble\asm\hellowor
+ 0040 6c642e61 736d0000 f4000000 18000000  ld.asm..........
+ 0050 01000000 10011ae7 6db9129c 3c4a11f8  ........m...<J..
+ 0060 c3a26330 03340000 f2000000 50000000  ..c0.4......P...
+ 0070 00000000 00000000 1c000000 00000000  ................
+ 0080 07000000 44000000 00000000 0e000080  ....D...........
+ 0090 01000000 0f000080 04000000 10000080  ................
+ 00a0 08000000 12000080 0f000000 13000080  ................
+ 00b0 14000000 15000080 17000000 16000080  ................
+ 00c0 f1000000 98000000 3e000111 00000000  ........>.......
+ 00d0 433a5c55 73657273 5c646f77 6e655c44  C:\Users\downe\D
+ 00e0 6f63756d 656e7473 5c526570 6f735c50  ocuments\Repos\P
+ 00f0 776e6162 6c655c61 736d5c68 656c6c6f  wnable\asm\hello
+ 0100 776f726c 642e6f00 34001611 4e000000  world.o.4...N...
+ 0110 d0000000 00000000 02001000 2c015468  ............,.Th
+ 0120 65204e65 74776964 65204173 73656d62  e Netwide Assemb
+ 0130 6c657220 322e3136 2e303300 00001000  ler 2.16.03.....
+ 0140 0c112000 00000000 00000000 6d736700  .. .........msg.
+ 0150 0e000511 00000000 0000006d 61696e00  ...........main.
+Contents of section .debug$T:
+ 0000 04000000 06000112 00000000 0e000810  ................
+ 0010 03000000 00000000 00100000           ............    
+Contents of section .data:
+ 0000 48656c6c 6f20776f 726c6421 0d0a00    Hello world!... 
+Contents of section .text:
+ 0000 554889e5 4883ec20 488d0d00 000000e8  UH..H.. H.......
+ 0010 00000000 4831c0e8 00000000           ....H1......    
+
+Disassembly of section .debug$S:
+
+0000000000000000 <.debug$S>:
+   0:	04 00                	add    al,0x0
+   2:	00 00                	add    BYTE PTR [rax],al
+   4:	f3 00 00             	repz add BYTE PTR [rax],al
+   7:	00 3b                	add    BYTE PTR [rbx],bh
+   9:	00 00                	add    BYTE PTR [rax],al
+   b:	00 00                	add    BYTE PTR [rax],al
+   d:	43 3a 5c 55 73       	cmp    bl,BYTE PTR [r13+r10*2+0x73]
+  12:	65 72 73             	gs jb  88 <.debug$S+0x88>
+  15:	5c                   	pop    rsp
+  16:	64 6f                	outs   dx,DWORD PTR fs:[rsi]
+  18:	77 6e                	ja     88 <.debug$S+0x88>
+  1a:	65 5c                	gs pop rsp
+  1c:	44 6f                	rex.R outs dx,DWORD PTR ds:[rsi]
+  1e:	63 75 6d             	movsxd esi,DWORD PTR [rbp+0x6d]
+  21:	65 6e                	outs   dx,BYTE PTR gs:[rsi]
+  23:	74 73                	je     98 <.debug$S+0x98>
+  25:	5c                   	pop    rsp
+  26:	52                   	push   rdx
+  27:	65 70 6f             	gs jo  99 <.debug$S+0x99>
+  2a:	73 5c                	jae    88 <.debug$S+0x88>
+  2c:	50                   	push   rax
+  2d:	77 6e                	ja     9d <.debug$S+0x9d>
+  2f:	61                   	(bad)
+  30:	62 6c 65 5c 61       	(bad)
+  35:	73 6d                	jae    a4 <.debug$S+0xa4>
+  37:	5c                   	pop    rsp
+  38:	68 65 6c 6c 6f       	push   0x6f6c6c65
+  3d:	77 6f                	ja     ae <.debug$S+0xae>
+  3f:	72 6c                	jb     ad <.debug$S+0xad>
+  41:	64 2e 61             	fs cs (bad)
+  44:	73 6d                	jae    b3 <.debug$S+0xb3>
+  46:	00 00                	add    BYTE PTR [rax],al
+  48:	f4                   	hlt
+  49:	00 00                	add    BYTE PTR [rax],al
+  4b:	00 18                	add    BYTE PTR [rax],bl
+  4d:	00 00                	add    BYTE PTR [rax],al
+  4f:	00 01                	add    BYTE PTR [rcx],al
+  51:	00 00                	add    BYTE PTR [rax],al
+  53:	00 10                	add    BYTE PTR [rax],dl
+  55:	01 1a                	add    DWORD PTR [rdx],ebx
+  57:	e7 6d                	out    0x6d,eax
+  59:	b9 12 9c 3c 4a       	mov    ecx,0x4a3c9c12
+  5e:	11 f8                	adc    eax,edi
+  60:	c3                   	ret
+  61:	a2 63 30 03 34 00 00 	movabs ds:0xf2000034033063,al
+  68:	f2 00 
+  6a:	00 00                	add    BYTE PTR [rax],al
+  6c:	50                   	push   rax
+	...
+			70: IMAGE_REL_AMD64_SECREL	.text
+			74: IMAGE_REL_AMD64_SECTION	.text
+  75:	00 00                	add    BYTE PTR [rax],al
+  77:	00 1c 00             	add    BYTE PTR [rax+rax*1],bl
+  7a:	00 00                	add    BYTE PTR [rax],al
+  7c:	00 00                	add    BYTE PTR [rax],al
+  7e:	00 00                	add    BYTE PTR [rax],al
+  80:	07                   	(bad)
+  81:	00 00                	add    BYTE PTR [rax],al
+  83:	00 44 00 00          	add    BYTE PTR [rax+rax*1+0x0],al
+  87:	00 00                	add    BYTE PTR [rax],al
+  89:	00 00                	add    BYTE PTR [rax],al
+  8b:	00 0e                	add    BYTE PTR [rsi],cl
+  8d:	00 00                	add    BYTE PTR [rax],al
+  8f:	80 01 00             	add    BYTE PTR [rcx],0x0
+  92:	00 00                	add    BYTE PTR [rax],al
+  94:	0f 00 00             	sldt   WORD PTR [rax]
+  97:	80 04 00 00          	add    BYTE PTR [rax+rax*1],0x0
+  9b:	00 10                	add    BYTE PTR [rax],dl
+  9d:	00 00                	add    BYTE PTR [rax],al
+  9f:	80 08 00             	or     BYTE PTR [rax],0x0
+  a2:	00 00                	add    BYTE PTR [rax],al
+  a4:	12 00                	adc    al,BYTE PTR [rax]
+  a6:	00 80 0f 00 00 00    	add    BYTE PTR [rax+0xf],al
+  ac:	13 00                	adc    eax,DWORD PTR [rax]
+  ae:	00 80 14 00 00 00    	add    BYTE PTR [rax+0x14],al
+  b4:	15 00 00 80 17       	adc    eax,0x17800000
+  b9:	00 00                	add    BYTE PTR [rax],al
+  bb:	00 16                	add    BYTE PTR [rsi],dl
+  bd:	00 00                	add    BYTE PTR [rax],al
+  bf:	80 f1 00             	xor    cl,0x0
+  c2:	00 00                	add    BYTE PTR [rax],al
+  c4:	98                   	cwde
+  c5:	00 00                	add    BYTE PTR [rax],al
+  c7:	00 3e                	add    BYTE PTR [rsi],bh
+  c9:	00 01                	add    BYTE PTR [rcx],al
+  cb:	11 00                	adc    DWORD PTR [rax],eax
+  cd:	00 00                	add    BYTE PTR [rax],al
+  cf:	00 43 3a             	add    BYTE PTR [rbx+0x3a],al
+  d2:	5c                   	pop    rsp
+  d3:	55                   	push   rbp
+  d4:	73 65                	jae    13b <.debug$S+0x13b>
+  d6:	72 73                	jb     14b <.debug$S+0x14b>
+  d8:	5c                   	pop    rsp
+  d9:	64 6f                	outs   dx,DWORD PTR fs:[rsi]
+  db:	77 6e                	ja     14b <.debug$S+0x14b>
+  dd:	65 5c                	gs pop rsp
+  df:	44 6f                	rex.R outs dx,DWORD PTR ds:[rsi]
+  e1:	63 75 6d             	movsxd esi,DWORD PTR [rbp+0x6d]
+  e4:	65 6e                	outs   dx,BYTE PTR gs:[rsi]
+  e6:	74 73                	je     15b <.debug$S+0x15b>
+  e8:	5c                   	pop    rsp
+  e9:	52                   	push   rdx
+  ea:	65 70 6f             	gs jo  15c <.debug$S+0x15c>
+  ed:	73 5c                	jae    14b <.debug$S+0x14b>
+  ef:	50                   	push   rax
+  f0:	77 6e                	ja     160 <.debug$S+0x160>
+  f2:	61                   	(bad)
+  f3:	62 6c 65 5c 61       	(bad)
+  f8:	73 6d                	jae    167 <.debug$S+0x167>
+  fa:	5c                   	pop    rsp
+  fb:	68 65 6c 6c 6f       	push   0x6f6c6c65
+ 100:	77 6f                	ja     171 <.debug$S+0x171>
+ 102:	72 6c                	jb     170 <.debug$S+0x170>
+ 104:	64 2e 6f             	fs outs dx,DWORD PTR fs:[rsi]
+ 107:	00 34 00             	add    BYTE PTR [rax+rax*1],dh
+ 10a:	16                   	(bad)
+ 10b:	11 4e 00             	adc    DWORD PTR [rsi+0x0],ecx
+ 10e:	00 00                	add    BYTE PTR [rax],al
+ 110:	d0 00                	rol    BYTE PTR [rax],1
+ 112:	00 00                	add    BYTE PTR [rax],al
+ 114:	00 00                	add    BYTE PTR [rax],al
+ 116:	00 00                	add    BYTE PTR [rax],al
+ 118:	02 00                	add    al,BYTE PTR [rax]
+ 11a:	10 00                	adc    BYTE PTR [rax],al
+ 11c:	2c 01                	sub    al,0x1
+ 11e:	54                   	push   rsp
+ 11f:	68 65 20 4e 65       	push   0x654e2065
+ 124:	74 77                	je     19d <.debug$S+0x19d>
+ 126:	69 64 65 20 41 73 73 	imul   esp,DWORD PTR [rbp+riz*2+0x20],0x65737341
+ 12d:	65 
+ 12e:	6d                   	ins    DWORD PTR es:[rdi],dx
+ 12f:	62 6c 65 72 20       	(bad)
+ 134:	32 2e                	xor    ch,BYTE PTR [rsi]
+ 136:	31 36                	xor    DWORD PTR [rsi],esi
+ 138:	2e 30 33             	cs xor BYTE PTR [rbx],dh
+ 13b:	00 00                	add    BYTE PTR [rax],al
+ 13d:	00 10                	add    BYTE PTR [rax],dl
+ 13f:	00 0c 11             	add    BYTE PTR [rcx+rdx*1],cl
+ 142:	20 00                	and    BYTE PTR [rax],al
+	...
+			146: IMAGE_REL_AMD64_SECREL	msg
+			14a: IMAGE_REL_AMD64_SECTION	msg
+ 14c:	6d                   	ins    DWORD PTR es:[rdi],dx
+ 14d:	73 67                	jae    1b6 <.debug$S+0x1b6>
+ 14f:	00 0e                	add    BYTE PTR [rsi],cl
+ 151:	00 05 11 00 00 00    	add    BYTE PTR [rip+0x11],al        # 168 <.debug$S+0x168>
+			154: IMAGE_REL_AMD64_SECREL	main
+ 157:	00 00                	add    BYTE PTR [rax],al
+			158: IMAGE_REL_AMD64_SECTION	main
+ 159:	00 00                	add    BYTE PTR [rax],al
+ 15b:	6d                   	ins    DWORD PTR es:[rdi],dx
+ 15c:	61                   	(bad)
+ 15d:	69                   	.byte 0x69
+ 15e:	6e                   	outs   dx,BYTE PTR ds:[rsi]
+	...
+
+Disassembly of section .debug$T:
+
+0000000000000000 <.debug$T>:
+   0:	04 00                	add    al,0x0
+   2:	00 00                	add    BYTE PTR [rax],al
+   4:	06                   	(bad)
+   5:	00 01                	add    BYTE PTR [rcx],al
+   7:	12 00                	adc    al,BYTE PTR [rax]
+   9:	00 00                	add    BYTE PTR [rax],al
+   b:	00 0e                	add    BYTE PTR [rsi],cl
+   d:	00 08                	add    BYTE PTR [rax],cl
+   f:	10 03                	adc    BYTE PTR [rbx],al
+	...
+  19:	10 00                	adc    BYTE PTR [rax],al
+	...
+
+Disassembly of section .data:
+
+0000000000000000 <msg>:
+   0:	48                   	rex.W
+   1:	65 6c                	gs ins BYTE PTR es:[rdi],dx
+   3:	6c                   	ins    BYTE PTR es:[rdi],dx
+   4:	6f                   	outs   dx,DWORD PTR ds:[rsi]
+   5:	20 77 6f             	and    BYTE PTR [rdi+0x6f],dh
+   8:	72 6c                	jb     76 <msg+0x76>
+   a:	64                   	fs
+   b:	21                   	.byte 0x21
+   c:	0d                   	.byte 0xd
+   d:	0a 00                	or     al,BYTE PTR [rax]
+
+Disassembly of section .text:
+
+0000000000000000 <main>:
+   0:	55                   	push   rbp
+   1:	48 89 e5             	mov    rbp,rsp
+   4:	48 83 ec 20          	sub    rsp,0x20
+   8:	48 8d 0d 00 00 00 00 	lea    rcx,[rip+0x0]        # f <main+0xf>
+			b: IMAGE_REL_AMD64_REL32	.data
+   f:	e8 00 00 00 00       	call   14 <main+0x14>
+			10: IMAGE_REL_AMD64_REL32	printf
+  14:	48 31 c0             	xor    rax,rax
+  17:	e8 00 00 00 00       	call   1c <main+0x1c>
+			18: IMAGE_REL_AMD64_REL32	ExitProcess

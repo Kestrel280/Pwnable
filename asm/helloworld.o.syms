@@ -1,0 +1,21 @@
+
+helloworld.o:     file format pe-x86-64
+
+SYMBOL TABLE:
+[  0](sec -2)(fl 0x00)(ty    0)(scl 103) (nx 1) 0x0000000000000000 helloworld.asm
+File 
+[  2](sec  1)(fl 0x00)(ty    0)(scl   3) (nx 1) 0x0000000000000000 .debug$S
+AUX scnlen 0x160 nreloc 6 nlnno 0
+[  4](sec  2)(fl 0x00)(ty    0)(scl   3) (nx 1) 0x0000000000000000 .debug$T
+AUX scnlen 0x1c nreloc 0 nlnno 0
+[  6](sec  3)(fl 0x00)(ty    0)(scl   3) (nx 1) 0x0000000000000000 .data
+AUX scnlen 0xf nreloc 0 nlnno 0
+[  8](sec  4)(fl 0x00)(ty    0)(scl   3) (nx 1) 0x0000000000000000 .text
+AUX scnlen 0x1c nreloc 3 nlnno 0
+[ 10](sec -1)(fl 0x00)(ty    0)(scl   3) (nx 0) 0x0000000000000000 .absolut
+[ 11](sec  3)(fl 0x00)(ty    0)(scl   3) (nx 0) 0x0000000000000000 msg
+[ 12](sec  0)(fl 0x00)(ty    0)(scl   2) (nx 0) 0x0000000000000000 ExitProcess
+[ 13](sec  0)(fl 0x00)(ty    0)(scl   2) (nx 0) 0x0000000000000000 printf
+[ 14](sec  4)(fl 0x00)(ty    0)(scl   2) (nx 0) 0x0000000000000000 main
+
+
