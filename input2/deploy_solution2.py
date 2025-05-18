@@ -6,6 +6,8 @@ import threading
 ansi_escape_8bit = re.compile(br'(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])')
 def dec(b): return ansi_escape_8bit.sub(b'', b).decode('ascii', errors='ignore')
 
+alldata = ""
+
 print(" --- connecting ---")
 client = SSHClient()
 client.set_missing_host_key_policy(AutoAddPolicy())
@@ -20,17 +22,37 @@ print(" --- compiling solution ---")
 channel = client.invoke_shell()
 stdin = channel.makefile('wb')
 stdout = channel.makefile('rb')
-
 stdin.write("cd /tmp/k280_input2 && gcc -o solve solution.c && echo -e \"compiled\\n\"".encode('utf-8'))
 stdin.flush()
 
-alldata = ""
 while 'compiled' not in alldata:
     nbytes = len(stdout.channel.in_buffer)
     if (nbytes > 0):
         data = dec(stdout.read(nbytes))
-        print('\t' + data.replace('\n', '\n\t'), end = '')
+        print(data, end = '')
         alldata += data
+
+"""print(" --- creating x0a file ---")
+time.sleep(0.3)
+nbytes = len(stdout.channel.in_buffer)
+data = dec(stdout.read(nbytes))
+alldata += data
+print(data, end = '')
+time.sleep(0.3)
+stdin.write("\necho -n -e \"\\x00\\x00\\x00\\x00\" > '\\x0a'\n")
+stdin.flush()
+time.sleep(0.3)
+stdin.write("echo -e \"created x0a file with 4 null bytes\\n\"\n")
+stdin.flush()
+
+
+while 'created' not in alldata:
+    nbytes = len(stdout.channel.in_buffer)
+    if (nbytes > 0):
+        data = dec(stdout.read(nbytes))
+        print(data, end = '')
+        alldata += data
+"""
 
 print("\n\n--- running ---\n\n")
 stdin.write("cd ~\n".encode('utf-8'))
@@ -42,7 +64,7 @@ while True:
     nbytes = len(stdout.channel.in_buffer)
     if (nbytes > 0):
         data = dec(stdout.read(nbytes))
-        print('\t' + data.replace('\n', '\n\t'), end = '')
+        print(data, end = '')
         alldata += data
 
 print("--- done ---")
