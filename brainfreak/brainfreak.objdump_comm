@@ -82,14 +82,14 @@ Disassembly of section .text:
  80484e2:	5e                   	pop    esi
  80484e3:	89 e1                	mov    ecx,esp
  80484e5:	83 e4 f0             	and    esp,0xfffffff0
- 80484e8:	50                   	push   eax
- 80484e9:	54                   	push   esp
- 80484ea:	52                   	push   edx
- 80484eb:	68 10 88 04 08       	push   0x8048810
- 80484f0:	68 a0 87 04 08       	push   0x80487a0
- 80484f5:	51                   	push   ecx
- 80484f6:	56                   	push   esi
- 80484f7:	68 71 86 04 08       	push   0x8048671
+ 80484e8:	50                   	push   eax                                  ; 
+ 80484e9:	54                   	push   esp                                  ; stack end
+ 80484ea:	52                   	push   edx                                  ; &rtld_fini
+ 80484eb:	68 10 88 04 08       	push   0x8048810                            ; &fini 
+ 80484f0:	68 a0 87 04 08       	push   0x80487a0                            ; &init (libc csu init)
+ 80484f5:	51                   	push   ecx                                  ; argv
+ 80484f6:	56                   	push   esi                                  ; argc
+ 80484f7:	68 71 86 04 08       	push   0x8048671                            ; &main
  80484fc:	e8 9f ff ff ff       	call   80484a0 <__libc_start_main@plt>
  8048501:	f4                   	hlt
  8048502:	66 90                	xchg   ax,ax
@@ -183,8 +183,8 @@ Disassembly of section .text:
 
 080485dc <do_brainfuck>:                                                        ; ebp+0x08 = argchar
  80485dc:	55                   	push   ebp                                  ; ebp-0x0c = locchar
- 80485dd:	89 e5                	mov    ebp,esp                              ; 0x0804a080 = tape i
- 80485df:	53                   	push   ebx                                  ; 0x0804a0a0 = tape start
+ 80485dd:	89 e5                	mov    ebp,esp                              ; 0x0804a080 contains the tape ptr
+ 80485df:	53                   	push   ebx                                  ; 0x0804a0a0 contains the first entry of the tape
  80485e0:	83 ec 24             	sub    esp,0x24                             ; 36 bytes
  80485e3:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]              ; move argchar into locchar
  80485e6:	88 45 f4             	mov    BYTE PTR [ebp-0xc],al                ; ...
