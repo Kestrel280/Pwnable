@@ -4,8 +4,9 @@ global _start
 section .text
 
 _start:
-    mov     rdi, 0x6032a0       ; arg0 (filename) -- stored in buf[0]
-    mov     rsi, 0x6032b0       ; arg1 (argv)
-    mov     rdx, 0x6032b0       ; arg2 (envp)
+    mov     rax, 0x3b           ; execve()
+    mov     rdi, 0x6020a0       ; arg0 (filename) -- stored in 'id'
+    xor     rsi, rsi            ; arg1 (argv)
+    ; xor     rdx, rdx            ; arg2 (envp)
     syscall
 

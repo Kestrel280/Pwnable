@@ -3,17 +3,28 @@
 
 int main() {
     int i;
-    char test[8];
+    char test1[8];
+    char test2[8];
     for (i = 0; i < 8; i++) {
-        test[i] = ' ';
+        test1[i] = ' ';
+        test2[i] = ' ';
     }
 
-    fgets(test, 8, stdin);
-
-    printf("%d", test[0]);
+    fgets(test1, 8, stdin);
+    printf("\nfgets: %d", test1[0]);
     for (i = 1; i < 8; i++) {
-        printf(" | %d", test[i]);
+        printf(" | %d", test1[i]);
     }
+    printf("\n");
+
+    scanf("%8s", test2);
+    printf("\nscanf: %d", test2[0]);
+    for (i = 1; i < 8; i++) {
+        printf(" | %d", test2[i]);
+    }
+    printf("\n");
+
+    printf("getc: %d", getc(stdin));
 
     exit(0);
 }
