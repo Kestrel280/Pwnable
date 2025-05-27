@@ -26,5 +26,15 @@ int main() {
 
     printf("getc: %d", getc(stdin));
 
+    printf("\n");
+
+    char buf[32];
+    printf("scanf into buf (32 bytes): ");
+    scanf("%32s", buf);
+
+    printf("printf(buf): ");
+    printf(buf);
+    printf("\n");
+
     exit(0);
 }

