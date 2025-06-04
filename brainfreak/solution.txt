@@ -5,6 +5,24 @@ GOT entry for putchar is at 0x08 04 a0 30 = 112 bytes before initial entry
 putchar itself is at 0x 08 04 84 d6
 brainfreak call to putchar is at 0x08048648
 
+solution executed in solve.py
+1. move tape ptr to putchar GOT entry
+2. call putchar once, to invoke linking the putchar symbol (populate the GOT entry with the appropriate address)
+3. leak the address of putchar by putchar'ing each of the GOT entry's bytes
+4. replace the address of the putchar entry with the start of the program (_start)
+5. replace the GOT entry for memset to point to 'fgets' library function
+6. replace the GOT entry for fgets to point to 'system' library function
+6. call putchar to trigger payload: start the program over, but now memset points to fgets, and fgets points to system()
+7. main calls memset->fgets() on input buffer, install "/bin/sh"
+8. main does "fgets(buf)" -> system("/bin/sh")
+
+-------------------------------------------------------------------------------------------------------------
+------------- the brainfreak folder contains a file 'libc-2.23.so'
+------------- this is NOT the library loaded by the brainfreak executable
+-------------   actual library is /lib/i386-linux-gnu/libc.so.6
+-------------       (nm -D brainfreak)
+-------------       (or, vmmap while in gdb)
+------------- the following addresses are based on the red herring so file...
 file libc -> x/i system
 libc.so:    putchar     @ 0x61930               -> linked at 0xf7df2060
             system      @ 0x3adb0 (-0x26b80)    -> linked at 0x
